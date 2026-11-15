@@ -1,0 +1,30 @@
+{
+  "name": "bou-bot",
+  "version": "0.1.0",
+  "description": "Consent-based WhatsApp AI companion — warm check-ins, honest AI identity, human-first escalation.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sim": "WA_PROVIDER=mock LLM_PROVIDER=mock tsx src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.8.0",
+    "dotenv": "^16.4.5",
+    "express": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

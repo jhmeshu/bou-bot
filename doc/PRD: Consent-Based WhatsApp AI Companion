@@ -1,0 +1,155 @@
+PRD: Consent-Based WhatsApp AI Companion
+Status: Draft — requires product decisions
+Version: 0.1
+Date: 10 November 2026
+1. Product overview
+Build a WhatsApp-based AI companion that can initiate occasional affectionate check-ins, respond naturally to incoming messages, and notify the account owner when a conversation needs human attention.
+
+Important product principle: The recipient must know that they are interacting with an AI assistant, not believe that the assistant is the account owner. The recipient must explicitly agree to receive automated messages and be able to pause or stop them at any time. The assistant must not conceal its identity, impersonate the account owner, or manipulate the recipient to suppress requests or concerns.
+2. Problem and goal
+The account owner may be busy during the workday but still wants to maintain warm, thoughtful communication.
+
+The product should:
+- Send occasional, non-intrusive check-ins during agreed hours.
+- Respond warmly and contextually to replies.
+- Keep conversations light when appropriate.
+- Recognize purchase-related hints and notify the account owner rather than attempting to influence or dismiss the recipient.
+- Escalate serious, urgent, or emotionally sensitive conversations to the account owner.
+- Pause automation immediately when requested or when a safety/escalation condition is met.
+3. Users and stakeholders
+- Account owner: Configures the assistant, receives alerts, takes over conversations, and controls automation.
+- WhatsApp recipient: Consents to the AI interaction, receives messages, can view the AI disclosure, and can pause or stop the assistant.
+- System administrator: Maintains integrations, credentials, logs, and reliability.
+4. Core user journeys
+4.1 Consent and onboarding
+1. Account owner configures the assistant and the recipient's WhatsApp number.
+2. Recipient receives a clear disclosure explaining that messages and replies may be handled by AI.
+3. Automation remains disabled until the recipient opts in.
+4. Recipient can send PAUSE or STOP at any time.
+5. Account owner can also pause or disable the assistant from the control panel.
+4.2 Scheduled affectionate check-ins
+1. Scheduler checks whether the current time is within the recipient-approved messaging window.
+2. It checks the daily message limit, quiet hours, recent conversation activity, and pause state.
+3. If eligible, it sends a short, varied, affectionate check-in that is clearly from the AI assistant.
+4. It avoids sending another opener if a conversation is already active or the recipient has not replied to recent messages.
+Example tone (must be disclosed as AI-generated):
+- “জান, কেমন আছো? আজকের দিনটা কেমন যাচ্ছে?”
+- “খেয়েছো? নিজের খেয়াল রেখো।”
+- “আজ তোমার দিনটা ভালো কাটুক ❤️”
+4.3 Reply handling
+1. Receive an inbound WhatsApp message through an approved WhatsApp integration.
+2. Check consent, automation state, safety signals, and escalation rules.
+3. Generate a concise, warm, context-aware reply.
+4. Do not invent facts, make commitments on behalf of the account owner, or claim the owner has done something they have not done.
+5. If confidence is low or the topic requires the owner's personal judgment, pause and escalate.
+4.4 Shopping-interest detection
+Detect messages that may indicate interest in buying or receiving something, for example:
+- “এই ব্যাগটা অনেক সুন্দর।”
+- “জামাটা খুব পছন্দ হয়েছে।”
+- “এটা কিনতে ইচ্ছা করছে।”
+Required behavior: Do not change the subject to distract the recipient, discourage the purchase, or hide the signal. Pause automated replies and send the account owner an alert containing the relevant message and timestamp. The account owner decides whether and how to respond.
+4.5 Serious-conversation escalation
+Escalate immediately when messages indicate:
+- Relationship conflict, distress, fear, or a request for an important discussion.
+- Health, safety, financial, legal, or family emergencies.
+- A direct request to speak with the account owner.
+- Threats of self-harm, harm to others, or immediate danger.
+On escalation:
+1. Stop autonomous conversation.
+2. Send the account owner an urgent notification with the relevant message and minimal necessary context.
+3. Send the recipient a transparent holding message, such as: “এটা গুরুত্বপূর্ণ বিষয়। আমি AI assistant—এখানে তোমার সঙ্গে মানুষের মতো সিদ্ধান্ত নেওয়া ঠিক হবে না। আমি এখনই [account owner]-কে জানাচ্ছি।”
+4. Do not resume until the account owner explicitly hands control back or the recipient starts a new opted-in session.
+For immediate danger, the assistant should encourage contacting local emergency services or a trusted person; it must not imply that an alert guarantees help.
+5. Functional requirements
+ID	Requirement	Priority
+FR-01	Explicit recipient opt-in before any automated conversation	Must
+FR-02	Clear AI identity disclosure in onboarding and, where appropriate, conversation	Must
+FR-03	Approved WhatsApp Business Platform/provider integration; no unofficial session scraping	Must
+FR-04	Configurable messaging window and quiet hours	Must
+FR-05	Configurable daily proactive-message cap and minimum interval	Must
+FR-06	Context-aware reply generation with bounded conversation history	Must
+FR-07	Immediate PAUSE / STOP handling	Must
+FR-08	Shopping-interest detection that pauses and alerts the owner	Must
+FR-09	Serious-topic and emergency detection with immediate escalation	Must
+FR-10	Owner takeover and explicit resume controls	Must
+FR-11	Delivery, failure, pause, and escalation event logs	Should
+FR-12	Configurable tone, language, and Bangla/English code-switching	Should
+FR-13	Duplicate-message and scheduler idempotency protection	Must
+
+
+6. Non-functional requirements
+- Privacy: Collect and retain only the data required to operate the assistant. Restrict access to message history and alert content.
+- Security: Store API credentials in a secrets manager; never hard-code tokens.
+- Reliability: Avoid duplicate proactive messages after retries or webhook redelivery.
+- Latency: Target a reply within a few seconds when the provider and model are available; otherwise send a transparent delay/hand-off message.
+- Auditability: Record why a message was sent, paused, or escalated without retaining unnecessary sensitive content.
+- Safety: When uncertain whether a conversation is serious, prefer escalation over autonomous response.
+7. Suggested system design
+1. WhatsApp integration: WhatsApp Business Platform via an approved provider, subject to its current policies and recipient opt-in requirements.
+2. Webhook service: Receives inbound messages and delivery events; validates signatures.
+3. Conversation orchestrator: Applies consent, quiet-hour, pause, takeover, and escalation rules before calling the model.
+4. LLM layer: Generates replies using a constrained system prompt and only the minimum relevant conversation context.
+5. Intent/safety classifier: Detects shopping-interest signals, serious topics, emergencies, direct human requests, and opt-out commands.
+6. Scheduler/queue: Sends proactive messages with rate limits, deduplication, and retry controls.
+7. Owner alert channel: Sends urgent notifications through a selected channel (for example, Telegram, email, or a private dashboard).
+8. Database: Stores consent status, preferences, message references, conversation state, and audit events.
+9. Control panel: Allows the owner to pause, take over, review alerts, and resume automation.
+8. Conversation state model
+- AWAITING_CONSENT
+- ACTIVE
+- PAUSED_BY_RECIPIENT
+- PAUSED_BY_OWNER
+- OWNER_TAKEOVER
+- ESCALATED
+- STOPPED
+Only an explicit, authorized action may move the assistant out of a paused, takeover, escalated, or stopped state.
+9. Initial assistant policy
+The assistant must:
+- Identify itself as an AI assistant and never pretend to be the account owner.
+- Be warm, respectful, concise, and natural in Bangla and English.
+- Avoid excessive messages, guilt, pressure, or emotional manipulation.
+- Never make purchases, promises, financial commitments, or relationship decisions.
+- Never conceal, dismiss, or redirect a recipient's needs to protect the account owner from a conversation.
+- Pause and alert the owner for purchase interest, serious topics, uncertainty, or a direct request for the owner.
+- Respect PAUSE, STOP, and quiet hours immediately.
+10. MVP scope
+Included
+- Consent/onboarding flow.
+- WhatsApp inbound and outbound messaging.
+- Configurable proactive schedule and daily cap.
+- AI reply generation in Bangla/English.
+- Shopping-interest pause + owner alert.
+- Serious-topic escalation + owner alert.
+- Owner pause/takeover/resume controls.
+- Basic event log.
+Excluded from MVP
+- Automated purchases or payments.
+- Sending images, voice notes, or calling.
+- Autonomous relationship advice or conflict resolution.
+- Contacting third parties.
+- Hidden impersonation of the account owner.
+11. Acceptance criteria
+1. No proactive message is sent before recipient opt-in.
+2. Every onboarding flow clearly identifies the assistant as AI.
+3. STOP disables all future automated messages immediately.
+4. No proactive message is sent during quiet hours or after the daily cap is reached.
+5. A detected purchase-interest message pauses automated replies and alerts the owner.
+6. A serious or emergency message pauses automated replies and triggers an urgent alert.
+7. A direct request to speak to the owner triggers takeover/escalation.
+8. Duplicate webhook events do not create duplicate replies.
+9. The owner can inspect the alert and take over without the bot sending competing messages.
+10. The assistant does not claim to be the owner or fabricate the owner's actions, feelings, or availability.
+12. Open questions
+Please confirm these before implementation:
+1. Recipient consent: Will your wife know this is an AI assistant and explicitly opt in before it messages her?
+2. WhatsApp setup: Do you have a WhatsApp Business number, or do you expect to use your personal WhatsApp account? (The supported integration path depends on this.)
+3. Proactive frequency: How many unsolicited check-ins per day, and what hours are acceptable?
+4. Languages and tone: Bangla only, Bangla-English mixed, or both? Should it use “জান” and emojis?
+5. Shopping-interest rule: Should any product compliment trigger a pause and alert, or only wording that suggests wanting to buy/receive it?
+6. Alert destination: Where should urgent alerts go—your WhatsApp, Telegram, email, or a dashboard?
+7. Serious-topic threshold: Should all relationship disagreements and emotional topics trigger handoff, or only urgent/high-risk messages?
+8. Human takeover: How will the system know you have taken over, and what action should be required before the AI resumes?
+9. Conversation history: May the assistant use the full conversation history, or only a short recent window?
+10. Hosting: Do you prefer a low-cost hosted automation platform (such as n8n) or a custom backend?
+13. Decisions pending
+Implementation should not begin until the consent model, WhatsApp integration method, proactive-message limits, alert channel, and takeover/resume workflow are confirmed.
